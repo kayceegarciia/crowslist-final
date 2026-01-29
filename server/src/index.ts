@@ -32,10 +32,12 @@ const wss = new WebSocketServer({
 
 app.use(express.json());
 app.use(cookieParser());
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
 app.use(
   cors({
     credentials: true,
-    origin: ["http://localhost:3000", "http://localhost:3001"],
+    origin: [FRONTEND_URL, "http://localhost:3000", "http://localhost:3001"],
   })
 );
 
