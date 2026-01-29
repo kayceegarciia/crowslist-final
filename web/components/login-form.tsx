@@ -34,7 +34,7 @@ export function LoginForm({ type }: { type: "user" | "admin" }) {
       });
 
       if (response.status === 200) {
-        const data = await response.data?.msg;
+        const data = response.data.msg;
         toast.success(data);
         router.replace("/home");
         return;
@@ -56,7 +56,7 @@ export function LoginForm({ type }: { type: "user" | "admin" }) {
       });
 
       if (response.status === 200) {
-        const data = await response.data.msg;
+        const data = response.data.msg;
         toast.success(data);
         router.replace("/admin/dashboard");
         return;
