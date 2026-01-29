@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import type { z } from "zod";
 import type { CreateRequestSchema } from "@/types/zodSchema";
 
-const BASE_URL = "http://localhost:5000/api/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
 
 export async function fetchRequests() {
   const session = cookies().get("session")?.value;

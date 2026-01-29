@@ -7,7 +7,7 @@ import type { z } from "zod";
 import type { CreatePostSchema } from "@/types/zodSchema";
 import { revalidatePath } from "next/cache";
 
-const BASE_URL = "http://localhost:5000/api/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
 
 export async function fetchPosts() {
   const session = cookies().get("session")?.value;

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 export function Logout({ type }: { type: "ADMIN" | "USER" }) {
   const router = useRouter();
+  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
 
   async function handleLogout(e: FormEvent) {
     e.preventDefault();
@@ -17,8 +18,8 @@ export function Logout({ type }: { type: "ADMIN" | "USER" }) {
     try {
       const response = await axios.post(
         type === "ADMIN"
-          ? "http://localhost:5000/api/v1/admin/logout"
-          : "http://localhost:5000/api/v1/auth/logout",
+          ? `${BASE_URL}/admin/logout`
+          : `${BASE_URL}/auth/logout`,
         {},
         {
           withCredentials: true,

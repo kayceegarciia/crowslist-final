@@ -35,7 +35,7 @@ import { SignupSchema } from "@/types/zodSchema";
 import { toast } from "sonner";
 import axios, { AxiosError } from "axios";
 
-const BASE_URL = "http://localhost:5000/api/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
 
 export function SignupForm() {
   const router = useRouter();
