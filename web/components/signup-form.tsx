@@ -46,7 +46,7 @@ export function SignupForm() {
       email: "",
       name: "",
       password: "",
-      college: "Vidyalankar Institute of Technology, Mumbai",
+      college: "West",
       phoneNo: "",
     },
   });
@@ -256,7 +256,7 @@ export function SignupForm() {
           <Label
             className={cn(form.formState.errors.college && "text-red-500")}
           >
-            College
+            Campus
           </Label>
 
           <Select
@@ -264,12 +264,14 @@ export function SignupForm() {
             defaultValue={form.formState.defaultValues?.college}
           >
             <SelectTrigger className="">
-              <SelectValue placeholder="your college" />
+              <SelectValue placeholder="select your campus" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Vidyalankar Institute of Technology, Mumbai">
-                Vidyalankar Institute of Technology, Mumbai
-              </SelectItem>
+              <SelectItem value="West">West</SelectItem>
+              <SelectItem value="Poly">Poly</SelectItem>
+              <SelectItem value="Downtown">Downtown</SelectItem>
+              <SelectItem value="Tempe">Tempe</SelectItem>
+              <SelectItem value="Online">Online</SelectItem>
             </SelectContent>
           </Select>
 

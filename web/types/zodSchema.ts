@@ -31,9 +31,9 @@ export const SignupSchema = z.object({
           "Password must contain at least one uppercase('A-Z') letter, one lowercase('a-z') letter, one digit(0-9), and one special character",
       }
     ),
-  college: z
-    .string()
-    .min(5, { message: "College name must be minimum 5 characters long" }),
+  college: z.enum(["West", "Poly", "Downtown", "Tempe", "Online"], {
+    errorMap: () => ({ message: "Please select a valid campus" }),
+  }),
   phoneNo: z
     .string()
     .min(10, { message: "Phone no. must be minimum 10 digits" })
