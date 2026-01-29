@@ -3,9 +3,9 @@ import { z } from "zod";
 export const LoginSchema = z.object({
   email: z
     .string()
-    .email({ message: "Please provide a valid @vit.edu.in email" })
-    .regex(/^[a-zA-Z]+\.[a-zA-Z]+@vit\.edu\.in$/, {
-      message: "Email must be a valid registered @vit.edu.in",
+    .email({ message: "Please provide a valid @asu.edu email" })
+    .regex(/^[^\s@]+@asu\.edu$/, {
+      message: "Email must be a valid registered @asu.edu",
     }),
   password: z.string(),
 });
@@ -13,9 +13,9 @@ export const LoginSchema = z.object({
 export const SignupSchema = z.object({
   email: z
     .string()
-    .email({ message: "Please provide a valid @vit.edu.in email" })
-    .regex(/^[a-zA-Z]+\.[a-zA-Z]+@vit\.edu\.in$/, {
-      message: "Email must be a valid registered @vit.edu.in",
+    .email({ message: "Please provide a valid @asu.edu email" })
+    .regex(/^[^\s@]+@asu\.edu$/, {
+      message: "Email must be a valid registered @asu.edu",
     }),
   name: z
     .string()

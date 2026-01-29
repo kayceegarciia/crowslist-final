@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-// Email pattern: matches "firstname.lastname@vit.edu.in"
-const emailPattern = /^[a-zA-Z]+\.[a-zA-Z]+@vit\.edu\.in$/;
+// Email pattern: any local part ending with @asu.edu
+const emailPattern = /^[^\s@]+@asu\.edu$/;
 
 // Password pattern: at least 1 uppercase letter, 1 lowercase letter, 1 digit, 1 special character, and 6-10 characters long
 export const passwordPattern =
@@ -10,9 +10,9 @@ export const passwordPattern =
 export const Signup = z.object({
   email: z
     .string()
-    .email({ message: "Please provide a valid @vit.edu.in email" })
+    .email({ message: "Please provide a valid @asu.edu email" })
     .regex(emailPattern, {
-      message: "Email must be a valid registered @vit.edu.in",
+      message: "Email must be a valid registered @asu.edu",
     }),
   name: z
     .string()
@@ -37,9 +37,9 @@ export const Signup = z.object({
 export const Login = z.object({
   email: z
     .string()
-    .email({ message: "Please provide a valid @vit.edu.in email" })
+    .email({ message: "Please provide a valid @asu.edu email" })
     .regex(emailPattern, {
-      message: "Email must be a valid registered @vit.edu.in",
+      message: "Email must be a valid registered @asu.edu",
     }),
   password: z.string(),
 });
