@@ -27,7 +27,11 @@ export function Logout({ type }: { type: "ADMIN" | "USER" }) {
       );
 
       if (response.status === 200) {
-        const data = await response.data.msg;
+        const data = response.data.msg;
+
+        // Clear localStorage on logout
+        localStorage.removeItem("session");
+        localStorage.removeItem("uid");
 
         toast.success(data);
         router.replace("/");
@@ -35,7 +39,7 @@ export function Logout({ type }: { type: "ADMIN" | "USER" }) {
       }
     } catch (error) {
       if (error instanceof AxiosError) {
-        const errorData = await error.response?.data.msg;
+        const errorData = error.response?.data.msg;
         toast.error(errorData);
         return;
       }

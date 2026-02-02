@@ -36,12 +36,17 @@ export function LoginForm({ type }: { type: "user" | "admin" }) {
 
       console.log("[DEBUG] Login response status:", response.status);
       console.log("[DEBUG] Login response data:", response.data);
-      console.log("[DEBUG] Login response cookies:", document.cookie);
 
       if (response.status === 200) {
-        const data = response.data.msg;
-        console.log("[DEBUG] Success message:", data);
-        toast.success(data);
+        const { msg, token, uid } = response.data;
+        console.log("[DEBUG] Success message:", msg);
+        
+        // Store token and uid in localStorage for cross-origin auth
+        localStorage.setItem("session", token);
+        localStorage.setItem("uid", uid);
+        console.log("[DEBUG] Token stored in localStorage");
+        
+        toast.success(msg);
         console.log("[DEBUG] Attempting redirect to /home");
         await router.replace("/home");
         console.log("[DEBUG] Redirect completed");
@@ -67,12 +72,17 @@ export function LoginForm({ type }: { type: "user" | "admin" }) {
 
       console.log("[DEBUG] Admin login response status:", response.status);
       console.log("[DEBUG] Admin login response data:", response.data);
-      console.log("[DEBUG] Admin login response cookies:", document.cookie);
 
       if (response.status === 200) {
-        const data = response.data.msg;
-        console.log("[DEBUG] Success message:", data);
-        toast.success(data);
+        const { msg, token, uid } = response.data;
+        console.log("[DEBUG] Success message:", msg);
+        
+        // Store token and uid in localStorage for cross-origin auth
+        localStorage.setItem("session", token);
+        localStorage.setItem("uid", uid);
+        console.log("[DEBUG] Token stored in localStorage");
+        
+        toast.success(msg);
         console.log("[DEBUG] Attempting redirect to /admin/dashboard");
         await router.replace("/admin/dashboard");
         console.log("[DEBUG] Redirect completed");
