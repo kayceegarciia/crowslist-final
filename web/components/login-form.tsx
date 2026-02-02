@@ -46,11 +46,6 @@ export function LoginForm({ type }: { type: "user" | "admin" }) {
         localStorage.setItem("uid", uid);
         console.log("[DEBUG] Token stored in localStorage");
         
-        // Also set as a cookie so middleware can see it
-        document.cookie = `session=${token}; path=/; max-age=604800`;
-        document.cookie = `uid=${uid}; path=/; max-age=604800`;
-        console.log("[DEBUG] Token set as cookie");
-        
         toast.success(msg);
         console.log("[DEBUG] Attempting redirect to /home");
         await router.replace("/home");
@@ -86,11 +81,6 @@ export function LoginForm({ type }: { type: "user" | "admin" }) {
         localStorage.setItem("session", token);
         localStorage.setItem("uid", uid);
         console.log("[DEBUG] Token stored in localStorage");
-        
-        // Also set as a cookie so middleware can see it
-        document.cookie = `session=${token}; path=/; max-age=604800`;
-        document.cookie = `uid=${uid}; path=/; max-age=604800`;
-        console.log("[DEBUG] Token set as cookie");
         
         toast.success(msg);
         console.log("[DEBUG] Attempting redirect to /admin/dashboard");

@@ -32,10 +32,6 @@ export function Logout({ type }: { type: "ADMIN" | "USER" }) {
         // Clear localStorage
         localStorage.removeItem("session");
         localStorage.removeItem("uid");
-        
-        // Clear cookies
-        document.cookie = "session=; path=/; max-age=0";
-        document.cookie = "uid=; path=/; max-age=0";
 
         toast.success(data);
         router.replace("/");
