@@ -29,21 +29,30 @@ export function LoginForm({ type }: { type: "user" | "admin" }) {
 
   async function handleUserLogin(values: z.infer<typeof LoginSchema>) {
     try {
+      console.log("[DEBUG] Sending login request to:", `${BASE_URL}/auth/login`);
       const response = await axios.post(`${BASE_URL}/auth/login`, values, {
         withCredentials: true,
       });
 
+      console.log("[DEBUG] Login response status:", response.status);
+      console.log("[DEBUG] Login response data:", response.data);
+      console.log("[DEBUG] Login response cookies:", document.cookie);
+
       if (response.status === 200) {
         const data = response.data.msg;
+        console.log("[DEBUG] Success message:", data);
         toast.success(data);
-        router.replace("/home");
+        console.log("[DEBUG] Attempting redirect to /home");
+        await router.replace("/home");
+        console.log("[DEBUG] Redirect completed");
         return;
       }
     } catch (error) {
-      console.log(error);
+      console.error("[DEBUG] Login error:", error);
 
       if (error instanceof AxiosError) {
         const errorData = error.response?.data.msg;
+        console.error("[DEBUG] Axios error data:", errorData);
         return toast.error(errorData);
       }
     }
@@ -51,21 +60,30 @@ export function LoginForm({ type }: { type: "user" | "admin" }) {
 
   async function handleAdminLogin(values: z.infer<typeof LoginSchema>) {
     try {
+      console.log("[DEBUG] Sending admin login request to:", `${BASE_URL}/admin/login`);
       const response = await axios.post(`${BASE_URL}/admin/login`, values, {
         withCredentials: true,
       });
 
+      console.log("[DEBUG] Admin login response status:", response.status);
+      console.log("[DEBUG] Admin login response data:", response.data);
+      console.log("[DEBUG] Admin login response cookies:", document.cookie);
+
       if (response.status === 200) {
         const data = response.data.msg;
+        console.log("[DEBUG] Success message:", data);
         toast.success(data);
-        router.replace("/admin/dashboard");
+        console.log("[DEBUG] Attempting redirect to /admin/dashboard");
+        await router.replace("/admin/dashboard");
+        console.log("[DEBUG] Redirect completed");
         return;
       }
     } catch (error) {
-      console.log(error);
+      console.error("[DEBUG] Admin login error:", error);
 
       if (error instanceof AxiosError) {
         const errorData = error.response?.data.msg;
+        console.error("[DEBUG] Axios error data:", errorData);
         toast.error(errorData);
         return;
       }
