@@ -41,10 +41,15 @@ export function LoginForm({ type }: { type: "user" | "admin" }) {
         const { msg, token, uid } = response.data;
         console.log("[DEBUG] Success message:", msg);
         
-        // Store token and uid in localStorage for cross-origin auth
+        // Store token and uid in localStorage for axios interceptor
         localStorage.setItem("session", token);
         localStorage.setItem("uid", uid);
         console.log("[DEBUG] Token stored in localStorage");
+        
+        // Also set as a cookie so middleware can see it
+        document.cookie = `session=${token}; path=/; max-age=604800`;
+        document.cookie = `uid=${uid}; path=/; max-age=604800`;
+        console.log("[DEBUG] Token set as cookie");
         
         toast.success(msg);
         console.log("[DEBUG] Attempting redirect to /home");
@@ -77,10 +82,15 @@ export function LoginForm({ type }: { type: "user" | "admin" }) {
         const { msg, token, uid } = response.data;
         console.log("[DEBUG] Success message:", msg);
         
-        // Store token and uid in localStorage for cross-origin auth
+        // Store token and uid in localStorage for axios interceptor
         localStorage.setItem("session", token);
         localStorage.setItem("uid", uid);
         console.log("[DEBUG] Token stored in localStorage");
+        
+        // Also set as a cookie so middleware can see it
+        document.cookie = `session=${token}; path=/; max-age=604800`;
+        document.cookie = `uid=${uid}; path=/; max-age=604800`;
+        console.log("[DEBUG] Token set as cookie");
         
         toast.success(msg);
         console.log("[DEBUG] Attempting redirect to /admin/dashboard");
