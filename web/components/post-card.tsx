@@ -8,7 +8,6 @@ import {
   CardFooter,
   CardTitle,
 } from "@/components/ui/card";
-import { IndianRupee } from "lucide-react";
 
 import { cn } from "@/components/lib/utils";
 import type { IPost } from "@/actions/types";
@@ -53,7 +52,7 @@ export function PostCard({
             </div>
             <div>
               <h1 className="flex items-center text-base text-secondary">
-                <IndianRupee size={18} /> {post.price}
+                $ {post.price}
               </h1>
             </div>
           </CardTitle>

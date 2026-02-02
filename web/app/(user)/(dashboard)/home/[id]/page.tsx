@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { ImageCarousel } from "@/components/image-carousel";
-import { ArrowLeft, IndianRupee } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { fetchPost } from "@/actions/post";
 import type { IPost } from "@/actions/types";
@@ -50,7 +50,7 @@ export default async function PostDetails({
             {post?.description}
           </p>
           <p className="flex items-center font-extrabold text-2xl text-primary">
-            <IndianRupee /> {post?.price}
+            $ {post?.price}
           </p>
 
           {post?.seller.id !== userId && post?.isAvailable && (

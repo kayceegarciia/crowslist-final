@@ -11,7 +11,6 @@ import type { IPost } from "@/actions/types";
 import { fetchPost } from "@/actions/post";
 import { ApproveBtn, RejectMessageForm } from "@/components/admin-action-btn";
 import { toast } from "sonner";
-import { IndianRupee } from "lucide-react";
 
 export default async function AdminPostDetails({
   params,
@@ -40,7 +39,7 @@ export default async function AdminPostDetails({
             {post?.description}
           </p>
           <p className="font-extrabold text-2xl flex items-center">
-            <IndianRupee /> {post?.price}
+            $ {post?.price}
           </p>
           <p className="font-semibold text-lg flex items-center">
             Category: {post?.category}

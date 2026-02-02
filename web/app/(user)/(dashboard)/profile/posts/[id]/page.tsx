@@ -66,7 +66,7 @@ export default async function UserPostDetails({
           <p className="text-sm text-neutral-800 text-wrap">
             {post?.description}
           </p>
-          <p className="font-extrabold text-xl">Rs. {post?.price}</p>
+          <p className="font-extrabold text-xl">$ {post?.price}</p>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 my-5 px-5">
