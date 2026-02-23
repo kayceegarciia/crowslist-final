@@ -33,9 +33,7 @@ import { Plus, Upload } from "lucide-react";
 import { cn } from "@/components/lib/utils";
 import { SignupSchema } from "@/types/zodSchema";
 import { toast } from "sonner";
-import axios, { AxiosError } from "axios";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+import { signupAction } from "@/app/actions/auth";
 
 export function SignupForm() {
   const router = useRouter();
@@ -54,31 +52,22 @@ export function SignupForm() {
   const [otp, setOtp] = useState<string | undefined>();
 
   async function handleSignup(values: z.infer<typeof SignupSchema>) {
-    try {
-      const response = await axios.post(`${BASE_URL}/auth/signup`, values, {
-        withCredentials: true,
-      });
+    const response = await signupAction(values);
 
-      if (response.status === 201) {
-        const data = response.data.msg;
-        toast.success(data);
-        return router.replace("/home");
+    if (response?.error) {
+      if (typeof response.error === "object") {
+        Object.entries(response.error).forEach(([field, message]) => {
+          toast.error(`${field}: ${message}`);
+        });
+        return;
       }
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        const errorData = error.response?.data.msg;
-        console.log(errorData);
-        if (errorData) {
-          if (typeof errorData === "object") {
-            // biome-ignore lint/complexity/noForEach: <explanation>
-            Object.entries(errorData).forEach(async ([field, message]) => {
-              toast.error(`${field}: ${message}`);
-            });
-          } else {
-            return toast.error(errorData);
-          }
-        }
-      }
+
+      return toast.error(response.error);
+    }
+
+    if (response?.success) {
+      toast.success(response.success);
+      return router.replace("/home");
     }
   }
 

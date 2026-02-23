@@ -23,7 +23,7 @@ export default async function AdminPostDetails({
   if (response?.error) return toast.error(response.error);
 
   if (response?.success) {
-    post = response.success;
+    post = response.success.post;
   }
   return (
     <div className="p-4 h-full">

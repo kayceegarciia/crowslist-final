@@ -21,6 +21,7 @@ import { userRouter } from "./routers/user.router";
 import { postRouter } from "./routers/post.router";
 import { requestRouter } from "./routers/request.router";
 import { chatRouter } from "./routers/chat.router";
+import { messageRouter } from "./routers/message.router";
 import { checkAuth } from "./utils/auth";
 
 import { UserManager } from "./sockets/userManager";
@@ -56,6 +57,7 @@ app.use("/api/v1/user", authMiddleware, userRouter);
 app.use("/api/v1/requests", authMiddleware, requestRouter);
 app.use("/api/v1/posts", authMiddleware, postRouter);
 app.use("/api/v1/chats", authMiddleware, chatRouter);
+app.use("/api/v1/messages", authMiddleware, messageRouter);
 
 const server = http.createServer(app);
 

@@ -12,9 +12,7 @@ import { Input } from "@/components/ui/input";
 
 import { LoginSchema } from "@/types/zodSchema";
 import { toast } from "sonner";
-import axios, { AxiosError } from "axios";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+import { adminLoginAction, loginAction } from "@/app/actions/auth";
 
 export function LoginForm({ type }: { type: "user" | "admin" }) {
   const router = useRouter();
@@ -28,75 +26,42 @@ export function LoginForm({ type }: { type: "user" | "admin" }) {
   });
 
   async function handleUserLogin(values: z.infer<typeof LoginSchema>) {
-    try {
-      console.log("[DEBUG] Sending login request to:", `${BASE_URL}/auth/login`);
-      const response = await axios.post(`${BASE_URL}/auth/login`, values, {
-        withCredentials: true,
-      });
+    const response = await loginAction(values);
 
-      console.log("[DEBUG] Login response status:", response.status);
-      console.log("[DEBUG] Login response data:", response.data);
-
-      if (response.status === 200) {
-        const { msg, token, uid } = response.data;
-        console.log("[DEBUG] Success message:", msg);
-        
-        // Store token and uid in localStorage for axios interceptor
-        localStorage.setItem("session", token);
-        localStorage.setItem("uid", uid);
-        console.log("[DEBUG] Token stored in localStorage");
-        
-        toast.success(msg);
-        console.log("[DEBUG] Attempting redirect to /home");
-        await router.replace("/home");
-        console.log("[DEBUG] Redirect completed");
+    if (response?.error) {
+      if (typeof response.error === "object") {
+        Object.entries(response.error).forEach(([field, message]) => {
+          toast.error(`${field}: ${message}`);
+        });
         return;
       }
-    } catch (error) {
-      console.error("[DEBUG] Login error:", error);
 
-      if (error instanceof AxiosError) {
-        const errorData = error.response?.data.msg;
-        console.error("[DEBUG] Axios error data:", errorData);
-        return toast.error(errorData);
-      }
+      return toast.error(response.error);
+    }
+
+    if (response?.success) {
+      toast.success(response.success);
+      await router.replace("/home");
     }
   }
 
   async function handleAdminLogin(values: z.infer<typeof LoginSchema>) {
-    try {
-      console.log("[DEBUG] Sending admin login request to:", `${BASE_URL}/admin/login`);
-      const response = await axios.post(`${BASE_URL}/admin/login`, values, {
-        withCredentials: true,
-      });
+    const response = await adminLoginAction(values);
 
-      console.log("[DEBUG] Admin login response status:", response.status);
-      console.log("[DEBUG] Admin login response data:", response.data);
-
-      if (response.status === 200) {
-        const { msg, token, uid } = response.data;
-        console.log("[DEBUG] Success message:", msg);
-        
-        // Store token and uid in localStorage for axios interceptor
-        localStorage.setItem("session", token);
-        localStorage.setItem("uid", uid);
-        console.log("[DEBUG] Token stored in localStorage");
-        
-        toast.success(msg);
-        console.log("[DEBUG] Attempting redirect to /admin/dashboard");
-        await router.replace("/admin/dashboard");
-        console.log("[DEBUG] Redirect completed");
+    if (response?.error) {
+      if (typeof response.error === "object") {
+        Object.entries(response.error).forEach(([field, message]) => {
+          toast.error(`${field}: ${message}`);
+        });
         return;
       }
-    } catch (error) {
-      console.error("[DEBUG] Admin login error:", error);
 
-      if (error instanceof AxiosError) {
-        const errorData = error.response?.data.msg;
-        console.error("[DEBUG] Axios error data:", errorData);
-        toast.error(errorData);
-        return;
-      }
+      return toast.error(response.error);
+    }
+
+    if (response?.success) {
+      toast.success(response.success);
+      await router.replace("/admin/dashboard");
     }
   }
 

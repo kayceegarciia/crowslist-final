@@ -3,8 +3,6 @@ import { Roboto } from "next/font/google";
 import "./globals.css";
 
 import { Toaster } from "sonner";
-import { AxiosInterceptorProvider } from "@/components/providers/axios-interceptor";
-import { AuthGuard } from "@/components/providers/auth-guard";
 
 const roboto = Roboto({
   weight: ["100", "300", "400", "500", "700", "900"],
@@ -29,8 +27,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`antialiased ${roboto.className}`}>
       <body className="">
-        <AxiosInterceptorProvider />
-        <AuthGuard />
         {children}
         <Toaster visibleToasts={10} richColors position="top-right" />
       </body>

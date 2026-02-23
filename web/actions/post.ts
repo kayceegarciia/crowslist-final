@@ -2,17 +2,39 @@
 
 import axios, { AxiosError } from "axios";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { z } from "zod";
 import type { CreatePostSchema } from "@/types/zodSchema";
 import { revalidatePath } from "next/cache";
+import type { IPost } from "./types";
+import { db } from "@/lib/db";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
 
+function getAppBaseUrl() {
+  const headerStore = headers();
+  const forwardedHost = headerStore.get("x-forwarded-host");
+  const host = forwardedHost || headerStore.get("host");
+  const forwardedProto = headerStore.get("x-forwarded-proto");
+  const protocol =
+    forwardedProto || (process.env.NODE_ENV === "development" ? "http" : "https");
+
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+
+  if (host) {
+    return `${protocol}://${host}`;
+  }
+
+  return "http://localhost:3000";
+}
+
 export async function fetchPosts() {
   const session = cookies().get("session")?.value;
+  const APP_BASE_URL = getAppBaseUrl();
   try {
-    const response = await axios.get(`${BASE_URL}/posts`, {
+    const response = await axios.get(`${APP_BASE_URL}/api/posts`, {
       withCredentials: true,
       headers: {
         Cookie: `session=${session}`,
@@ -32,33 +54,77 @@ export async function fetchPosts() {
 }
 
 export async function fetchPost(postId: string) {
-  const session = cookies().get("session")?.value;
   try {
-    const response = await axios.get(`${BASE_URL}/posts/${postId}`, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
+    const post = await db.post.findUnique({
+      where: { id: postId },
+      include: {
+        seller: {
+          select: {
+            id: true,
+            college: true,
+            email: true,
+            image: true,
+            name: true,
+            phoneNo: true,
+          },
+        },
+        feeback: true,
       },
     });
 
-    if (response.status === 200) {
-      const data = await response.data;
-      console.log(data);
-      return { success: data };
+    if (!post) {
+      return { error: "No post found" };
     }
+
+    const soldPostsWithFeedback = await db.post.findMany({
+      where: {
+        sellerId: post.seller.id,
+        isAvailable: false,
+        soldToUserId: { not: null },
+        feeback: { NOT: undefined },
+      },
+      select: {
+        feeback: {
+          select: {
+            rating: true,
+          },
+        },
+      },
+    });
+
+    const ratings = soldPostsWithFeedback
+      .map((item) => item.feeback?.rating)
+      .filter((rating): rating is number => typeof rating === "number");
+
+    const totalRatings = ratings.length;
+    const averageRating =
+      totalRatings > 0
+        ? Number.parseFloat(
+            (ratings.reduce((a, b) => a + b, 0) / totalRatings).toFixed(2)
+          )
+        : null;
+
+    return {
+      success: {
+        post: post as IPost,
+        sellerStats: {
+          totalSoldWithRating: totalRatings,
+          averageRating,
+        },
+      },
+    };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function fetchFilteredPosts(category: string, query?: string) {
   const session = cookies().get("session")?.value;
+  const APP_BASE_URL = getAppBaseUrl();
   try {
     const response = await axios.get(
-      `${BASE_URL}/posts/filters?q=${query}&category=${category}`,
+      `${APP_BASE_URL}/api/posts/filters?q=${query}&category=${category}`,
       {
         withCredentials: true,
         headers: {

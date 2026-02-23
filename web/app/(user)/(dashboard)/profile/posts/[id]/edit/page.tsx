@@ -10,7 +10,7 @@ export default async function EditPost({ params }: { params: { id: string } }) {
   if (response?.error) return toast.error(response.error);
 
   if (response?.success) {
-    post = response.success;
+    post = response.success.post;
   }
 
   return (
