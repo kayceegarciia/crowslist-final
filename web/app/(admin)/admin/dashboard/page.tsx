@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 import type { IPost, IUserRequest } from "@/actions/types";
-import { DashboardTable } from "@/components/admin-dashboard-table";
-import { adminHome } from "@/actions/admin";
+import { DashboardTable } from "../../../../components/admin-dashboard-table";
+import { adminHome } from "../../../../actions/admin";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard",

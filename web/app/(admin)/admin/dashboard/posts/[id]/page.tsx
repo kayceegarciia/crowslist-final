@@ -1,4 +1,4 @@
-import { ImageCarousel } from "@/components/image-carousel";
+import { ImageCarousel } from "../../../../../../components/image-carousel";
 import {
   Dialog,
   DialogHeader,
