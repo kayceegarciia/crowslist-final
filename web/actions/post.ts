@@ -69,7 +69,7 @@ export async function fetchPost(postId: string) {
 
     const ratings = soldPostsWithFeedback
       .map((item: { feeback: { rating: number } | null }) => item.feeback?.rating)
-      .filter((rating): rating is number => typeof rating === "number");
+      .filter((rating: number | undefined | null): rating is number => typeof rating === "number");
 
     const totalRatings = ratings.length;
     const averageRating =
