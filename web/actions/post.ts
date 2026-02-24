@@ -1,55 +1,30 @@
 "use server";
 
-import axios, { AxiosError } from "axios";
-
-import { cookies, headers } from "next/headers";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 import type { z } from "zod";
 import type { CreatePostSchema } from "@/types/zodSchema";
 import { revalidatePath } from "next/cache";
 import type { IPost } from "./types";
 import { db } from "@/lib/db";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
-
-function getAppBaseUrl() {
-  const headerStore = headers();
-  const forwardedHost = headerStore.get("x-forwarded-host");
-  const host = forwardedHost || headerStore.get("host");
-  const forwardedProto = headerStore.get("x-forwarded-proto");
-  const protocol =
-    forwardedProto || (process.env.NODE_ENV === "development" ? "http" : "https");
-
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL;
-  }
-
-  if (host) {
-    return `${protocol}://${host}`;
-  }
-
-  return "http://localhost:3000";
-}
+const SECRET = process.env.SECRET as string;
 
 export async function fetchPosts() {
-  const session = cookies().get("session")?.value;
-  const APP_BASE_URL = getAppBaseUrl();
   try {
-    const response = await axios.get(`${APP_BASE_URL}/api/posts`, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
+    const posts = await db.post.findMany({
+      where: {
+        isApproved: true,
+      },
+      orderBy: {
+        createdAt: "asc",
       },
     });
 
-    if (response.status === 200) {
-      const data = await response.data.posts;
-      return { success: data };
-    }
+    return { success: posts };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
@@ -120,59 +95,57 @@ export async function fetchPost(postId: string) {
 }
 
 export async function fetchFilteredPosts(category: string, query?: string) {
-  const session = cookies().get("session")?.value;
-  const APP_BASE_URL = getAppBaseUrl();
   try {
-    const response = await axios.get(
-      `${APP_BASE_URL}/api/posts/filters?q=${query}&category=${category}`,
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      }
-    );
+    const queryConditions: any = {
+      isApproved: true,
+    };
+    
+    if (query) {
+      queryConditions.title = { contains: query, mode: "insensitive" };
+    }
 
-    if (response.status === 200) {
-      const data = await response.data.posts;
-      return { success: data };
+    if (category && category !== "ALL") {
+      queryConditions.category = { equals: category };
     }
+
+    const posts = await db.post.findMany({
+      where: queryConditions,
+    });
+
+    return { success: posts };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function createPost(values: z.infer<typeof CreatePostSchema>) {
   const session = cookies().get("session")?.value;
 
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
+
   try {
-    const response = await axios.post(`${BASE_URL}/posts`, values, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+
+    const { images, title, description, price, category } = values;
+
+    await db.post.create({
+      data: {
+        title,
+        description,
+        images,
+        price,
+        category,
+        sellerId: decoded.id,
       },
     });
 
-    if (response.status === 201) {
-      const data = await response.data.msg;
-      return { success: data };
-    }
+    return { success: "Post created" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = error.response?.data.msg;
-      console.log(errorData);
-      if (errorData) {
-        // if (typeof errorData === "object") {
-        //   // biome-ignore lint/complexity/noForEach: <explanation>
-        //   Object.entries(errorData).forEach(async ([field, message]) => {
-        //     toast.error(`${field}: ${message}`);
-        //   });
-        // }
-      }
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
@@ -187,61 +160,115 @@ export async function updatePost(
   }>
 ) {
   const session = cookies().get("session")?.value;
-  try {
-    if (modifiedData) {
-      const response = await axios.patch(
-        `${BASE_URL}/posts/${postId}`,
-        modifiedData,
-        {
-          withCredentials: true,
-          headers: {
-            Cookie: `session=${session}`,
-          },
-        }
-      );
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
 
-      if (response.status === 200) {
-        const data = await response.data.msg;
-        revalidatePath("/profile");
-        revalidatePath(`/profile/posts/${postId}`);
-        revalidatePath(`/profile/posts/${postId}/edit`);
-        return { success: data };
-      }
-    } else {
+  try {
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+
+    if (!modifiedData || Object.keys(modifiedData).length === 0) {
       return { error: "Nothing to update" };
     }
-  } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
+
+    const post = await db.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      return { error: "Post not found" };
     }
+
+    if (post.sellerId !== decoded.id) {
+      return { error: "Unauthorized" };
+    }
+
+    await db.post.update({
+      where: { id: postId },
+      data: modifiedData,
+    });
+
+    revalidatePath("/profile");
+    revalidatePath(`/profile/posts/${postId}`);
+    revalidatePath(`/profile/posts/${postId}/edit`);
+    return { success: "Post updated" };
+  } catch (error) {
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function postSold(postId: string, customerId: string) {
   const session = cookies().get("session")?.value;
-  try {
-    const response = await axios.patch(
-      `${BASE_URL}/posts/${postId}/sold`,
-      { customerId },
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      }
-    );
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
 
-    if (response.status === 200) {
-      const data = await response.data.msg;
-      console.log(data);
-      return { success: data };
+  try {
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+
+    const customerExists = await db.user.findFirst({
+      where: { id: customerId },
+    });
+
+    if (!customerExists) {
+      return { error: "Customer does not exists" };
     }
+
+    const postExists = await db.post.findUnique({
+      where: {
+        id: postId,
+        sellerId: decoded.id,
+      },
+    });
+
+    if (!postExists) {
+      return { error: "Post does not exists" };
+    }
+
+    await db.post.update({
+      where: {
+        id: postId,
+        sellerId: decoded.id,
+      },
+      data: {
+        isAvailable: false,
+        soldToUserId: customerId,
+      },
+    });
+
+    const chatToDelete = await db.chat.findFirst({
+      where: {
+        participants: {
+          every: {
+            id: {
+              in: [decoded.id, customerId],
+            },
+          },
+        },
+      },
+    });
+
+    if (chatToDelete) {
+      await db.message.deleteMany({
+        where: {
+          chatId: chatToDelete.id,
+        },
+      });
+
+      await db.chat.delete({
+        where: {
+          id: chatToDelete.id,
+        },
+      });
+    }
+
+    return { success: "Updated post status" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
@@ -255,49 +282,68 @@ export async function sendFeedback({
   remark?: string;
 }) {
   const session = cookies().get("session")?.value;
-  try {
-    const response = await axios.post(
-      `${BASE_URL}/posts/feedback/${postId}`,
-      { rating, remark },
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      }
-    );
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
 
-    if (response.status === 201) {
-      const data = await response.data.msg;
-      return { success: data };
+  try {
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+
+    const postExists = await db.post.findUnique({
+      where: {
+        id: postId,
+        soldToUserId: decoded.id,
+      },
+    });
+
+    if (!postExists) {
+      return { error: "Post not found" };
     }
+
+    await db.feedback.create({
+      data: {
+        rating,
+        text: remark ?? "",
+        postId,
+        customerId: decoded.id,
+      },
+    });
+
+    return { success: "Feedback submitted successfully..." };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function deletePost(postId: string) {
   const session = cookies().get("session")?.value;
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
+
   try {
-    const response = await axios.delete(`${BASE_URL}/posts/${postId}`, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+
+    const postExists = await db.post.findUnique({
+      where: {
+        id: postId,
+        sellerId: decoded.id,
       },
     });
 
-    if (response.status === 200) {
-      const data = await response.data.msg;
-      revalidatePath("/profile");
-      return { success: data };
+    if (!postExists) {
+      return { error: "Post not found" };
     }
+
+    await db.post.delete({ where: { id: postId, sellerId: decoded.id } });
+
+    revalidatePath("/profile");
+    return { success: "Post deleted" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }

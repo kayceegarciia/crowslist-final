@@ -1,32 +1,46 @@
 "use server";
 
-import axios, { AxiosError } from "axios";
-
+import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import type { z } from "zod";
 import type { CreateRequestSchema } from "@/types/zodSchema";
+import { db } from "@/lib/db";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+const SECRET = process.env.SECRET as string;
 
 export async function fetchRequests() {
-  const session = cookies().get("session")?.value;
   try {
-    const response = await axios.get(`${BASE_URL}/requests`, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
+    const requests = await db.request.findMany({
+      where: {
+        isApproved: true,
+      },
+      orderBy: {
+        upVotes: {
+          _count: "desc",
+        },
+      },
+      include: {
+        _count: {
+          select: {
+            upVotes: true,
+          },
+        },
+        user: {
+          select: {
+            college: true,
+            email: true,
+            image: true,
+            name: true,
+            phoneNo: true,
+          },
+        },
       },
     });
 
-    if (response.status === 200) {
-      const data = await response.data.requests;
-      return data;
-    }
+    return { success: requests };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
@@ -34,73 +48,104 @@ export async function createRequest(
   values: z.infer<typeof CreateRequestSchema>
 ) {
   const session = cookies().get("session")?.value;
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
+
   try {
-    const response = await axios.post(`${BASE_URL}/requests/create`, values, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+
+    const { image, title, description } = values;
+
+    await db.request.create({
+      data: {
+        title,
+        description,
+        image,
+        userId: decoded.id,
       },
     });
 
-    if (response.status === 201) {
-      const data = await response.data;
-      return { success: data.msg };
-    }
+    return { success: "Request created" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = error.response?.data.msg;
-      console.log(errorData);
-      if (errorData) {
-        // if (typeof errorData === "object") {
-        //   // biome-ignore lint/complexity/noForEach: <explanation>
-        //   Object.entries(errorData).forEach(async ([field, message]) => {
-        //     toast.error(`${field}: ${message}`);
-        //   });
-        // }
-      }
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function upVoteRequest(requestId: string) {
   const session = cookies().get("session")?.value;
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
+
   try {
-    await axios.post(
-      `${BASE_URL}/requests/upvote/${requestId}`,
-      {},
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      }
-    );
-  } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+
+    const requestExists = await db.request.findUnique({
+      where: {
+        id: requestId,
+      },
+    });
+
+    if (!requestExists) {
+      return { error: "Request doesn't exists" };
     }
+
+    const alreadyUpVoted = await db.upVote.findUnique({
+      where: {
+        requestId_userId: {
+          requestId,
+          userId: decoded.id,
+        },
+      },
+    });
+
+    if (!alreadyUpVoted) {
+      await db.upVote.create({ data: { requestId, userId: decoded.id } });
+      return { success: "Upvoted" };
+    }
+
+    await db.upVote.delete({
+      where: {
+        requestId_userId: {
+          requestId,
+          userId: decoded.id,
+        },
+      },
+    });
+    return { success: "Removed upvote" };
+  } catch (error) {
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function deleteRequest(requestId: string) {
   const session = cookies().get("session")?.value;
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
+
   try {
-    const response = await axios.delete(`${BASE_URL}/requests/${requestId}`, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
-      },
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+
+    const requestExists = await db.request.findUnique({ 
+      where: { id: requestId, userId: decoded.id } 
     });
 
-    if (response.status === 200) {
-      const data = await response.data.msg;
-      return { success: data };
+    if (!requestExists) {
+      return { error: "Request doesn't exists" };
     }
+
+    await db.request.delete({ where: { id: requestId } });
+
+    return { success: "Request deleted" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }

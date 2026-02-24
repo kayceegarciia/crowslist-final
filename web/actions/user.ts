@@ -1,32 +1,65 @@
 "use server";
 
-import axios, { AxiosError } from "axios";
-
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import type { IUserNotification } from "./types";
+import { db } from "@/lib/db";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+const SECRET = process.env.SECRET as string;
 
 export async function fetchUserProfile() {
   const session = cookies().get("session")?.value;
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
+
   try {
-    const response = await axios.get(`${BASE_URL}/user`, {
-      headers: {
-        Cookie: `session=${session}`,
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+
+    const user = await db.user.findUnique({
+      where: { id: decoded.id },
+      select: {
+        id: true,
+        image: true,
+        email: true,
+        name: true,
+        posts: true,
+        purchasedItems: {
+          include: {
+            feeback: true,
+          },
+        },
+        phoneNo: true,
+        college: true,
+        requests: {
+          include: {
+            _count: {
+              select: {
+                upVotes: true,
+              },
+            },
+            user: {
+              select: {
+                id: true,
+                image: true,
+                email: true,
+                phoneNo: true,
+                college: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
-      withCredentials: true,
     });
 
-    if (response.status === 200) {
-      const data = await response.data.user;
-      return { success: data };
-    }
+    return { success: user };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
@@ -39,99 +72,147 @@ export async function updateProfile(
   }>
 ) {
   const session = cookies().get("session")?.value;
-  try {
-    if (modifiedData) {
-      const response = await axios.patch(`${BASE_URL}/user`, modifiedData, {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      });
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
 
-      if (response.status === 200) {
-        const data = await response.data.msg;
-        revalidatePath("/profile");
-        return { success: data };
-      }
-    } else {
+  try {
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+
+    if (!modifiedData || Object.keys(modifiedData).length === 0) {
       return { error: "Nothing to update" };
     }
-  } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
+
+    const user = await db.user.findUnique({
+      where: { id: decoded.id },
+    });
+
+    if (!user) {
+      return { error: "User not found" };
     }
+
+    const updateData: any = {};
+    
+    if (modifiedData.name) updateData.name = modifiedData.name;
+    if (modifiedData.image) updateData.image = modifiedData.image;
+    if (modifiedData.phoneNo) updateData.phoneNo = modifiedData.phoneNo;
+    if (modifiedData.password) {
+      updateData.password = await bcrypt.hash(modifiedData.password, 10);
+    }
+
+    await db.user.update({
+      where: { id: decoded.id },
+      data: updateData,
+    });
+
+    revalidatePath("/profile");
+    return { success: "Profile updated" };
+  } catch (error) {
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function deleteUser() {
   const session = cookies().get("session")?.value;
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
+
   try {
-    const response = await axios.delete(`${BASE_URL}/user`, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
-      },
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+
+    const user = await db.user.findUnique({
+      where: { id: decoded.id },
     });
 
-    if (response.status === 200) {
-      const data = await response.data.msg;
-      return { success: data };
+    if (!user) {
+      return { error: "User not found" };
     }
+
+    const posts = await db.post.findMany({ where: { sellerId: decoded.id } });
+
+    if (posts.length > 0) {
+      return { error: "Delete all your listings first" };
+    }
+
+    const requests = await db.request.findMany({ where: { userId: decoded.id } });
+
+    if (requests.length > 0) {
+      return { error: "Delete all your requests first" };
+    }
+
+    await db.user.delete({ where: { id: decoded.id } });
+
+    return { success: "Account is deleted" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function fetchUserNotifications() {
   const session = cookies().get("session")?.value;
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
+
   try {
-    const response = await axios.get(`${BASE_URL}/user/notifications`, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+
+    const notifications = await db.notification.findMany({
+      where: {
+        targetId: decoded.id,
+        read: false,
+      },
+      include: {
+        action: {
+          select: {
+            id: true,
+            image: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     });
 
-    if (response.status === 200) {
-      const data = (await response.data.notifications) as IUserNotification[];
-      return { success: data };
-    }
+    return { success: notifications };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function markAsRead(id: string) {
   const session = cookies().get("session")?.value;
-  try {
-    const response = await axios.patch(
-      `${BASE_URL}/user/notifications/${id}`,
-      {},
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      }
-    );
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
 
-    if (response.status === 200) {
-      revalidatePath("/notifications");
-      revalidatePath("/home");
-      const data = await response.data.msg;
-      return { success: data };
-    }
+  try {
+    jwt.verify(session, SECRET);
+
+    await db.notification.update({
+      where: {
+        id,
+      },
+      data: {
+        read: true,
+      },
+    });
+
+    revalidatePath("/notifications");
+    revalidatePath("/home");
+    return { success: "Notification marked as read" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }

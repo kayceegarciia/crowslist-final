@@ -1,42 +1,40 @@
 "use client";
 
-import { type FormEvent, useRef } from "react";
-import { useFormStatus } from "react-dom";
-
+import { type FormEvent, useRef, useState } from "react";
+import { sendMessage } from "@/actions/message";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
 import Spinner from "@/components/spinner";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function MessageInput({
   chatId,
   receiverId,
-  socket,
 }: {
   chatId: string;
   receiverId: string;
-  socket: WebSocket;
 }) {
   const router = useRouter();
   const message = useRef<HTMLTextAreaElement>(null);
-  const { pending } = useFormStatus();
+  const [pending, setPending] = useState(false);
 
   async function handleSendMessage(e?: FormEvent) {
     e?.preventDefault();
 
-    if (message.current?.value && message.current?.value.length < 1) return;
+    if (!message.current?.value || message.current?.value.length < 1) return;
 
-    const payload = JSON.stringify({
-      event: "new_message",
-      chatId,
-      text: message.current?.value,
-      receiverId,
-    });
-    socket.send(payload);
+    setPending(true);
+    const result = await sendMessage(chatId, message.current.value);
+    setPending(false);
 
-    if (message.current?.value) message.current.value = "";
-    router.refresh();
+    if (result?.error) {
+      toast.error(result.error);
+    } else {
+      if (message.current?.value) message.current.value = "";
+      router.refresh();
+    }
   }
 
   return (

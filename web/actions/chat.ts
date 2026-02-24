@@ -2,116 +2,218 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import axios, { AxiosError } from "axios";
+import jwt from "jsonwebtoken";
+import { db } from "@/lib/db";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+const SECRET = process.env.SECRET as string;
 
 export async function getAllChats() {
-  const session = cookies().get("session")?.value;
   try {
-    const response = await axios.get(`${BASE_URL}/chats`, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
+    const session = cookies().get("session")?.value;
+    if (!session) {
+      return { error: "Unauthorized" };
+    }
+
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+    const userId = decoded.id;
+
+    const user = await db.user.findFirst({ where: { id: userId } });
+    if (!user) {
+      return { error: "User not found" };
+    }
+
+    const chats = await db.chat.findMany({
+      where: {
+        participants: {
+          some: { id: userId },
+        },
+      },
+      include: {
+        messages: {
+          include: {
+            sender: {
+              select: {
+                id: true,
+                image: true,
+                name: true,
+                college: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+        participants: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            college: true,
+          },
+        },
       },
     });
 
-    if (response.status === 200) {
-      const data = await response.data.chats;
-      return { success: data };
+    if (chats.length === 0) {
+      return { error: "No chat found" };
     }
+
+    return { success: chats };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.error("Error fetching chats:", error);
+    return { error: "Failed to fetch chats" };
   }
 }
 
 export async function getChat(id: string) {
-  const session = cookies().get("session")?.value;
   try {
-    const response = await axios.get(`${BASE_URL}/chats/${id}`, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
+    const session = cookies().get("session")?.value;
+    if (!session) {
+      return { error: "Unauthorized" };
+    }
+
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+    const userId = decoded.id;
+
+    const user = await db.user.findFirst({ where: { id: userId } });
+    if (!user) {
+      return { error: "User not found" };
+    }
+
+    const chat = await db.chat.findFirst({
+      where: { id },
+      include: {
+        messages: {
+          include: {
+            sender: {
+              select: {
+                id: true,
+                image: true,
+                name: true,
+                college: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+        participants: {
+          select: {
+            id: true,
+            image: true,
+            name: true,
+            college: true,
+          },
+        },
       },
     });
 
-    if (response.status === 200) {
-      const data = await response.data.chat;
-      return { success: data };
+    if (!chat) {
+      return { error: "Chat not found" };
     }
+
+    return { success: chat };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.error("Error fetching chat:", error);
+    return { error: "Failed to fetch chat" };
   }
 }
 
 export async function startChat(withUserId: string) {
-  const session = cookies().get("session")?.value;
   try {
-    const response = await axios.post(
-      `${BASE_URL}/chats`,
-      {
-        withUserId,
-      },
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
+    const session = cookies().get("session")?.value;
+    if (!session) {
+      return { error: "Unauthorized" };
+    }
+
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+    const userId = decoded.id;
+
+    if (userId === withUserId) {
+      return { error: "You cannot chat with yourself" };
+    }
+
+    const userExists = await db.user.findFirst({ where: { id: userId } });
+    const withUserExists = await db.user.findFirst({ where: { id: withUserId } });
+    
+    if (!userExists || !withUserExists) {
+      return { error: "One or both users not found" };
+    }
+
+    const chatExists = await db.chat.findFirst({
+      where: {
+        participants: {
+          some: { id: userId },
         },
-      }
-    );
+        AND: {
+          participants: {
+            some: { id: withUserId },
+          },
+        },
+      },
+    });
 
-    if (response.status === 200) {
-      const data = await response.data;
+    if (!chatExists) {
+      const newChat = await db.chat.create({
+        data: {
+          participants: {
+            connect: [
+              { id: userId },
+              { id: withUserId },
+            ],
+          },
+        },
+      });
+
       revalidatePath("/messages");
-      return { success: "REDIRECT", chatId: data.chatId };
+      revalidatePath(`/messages/${newChat.id}`);
+      return { success: newChat.id };
     }
 
-    if (response.status === 201) {
-      const data = await response.data;
-      revalidatePath("/messages");
-      revalidatePath(`/messages/${data.chatId}`);
-      return { success: data.chatId };
-    }
+    revalidatePath("/messages");
+    return { success: "REDIRECT", chatId: chatExists.id };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.error("Error starting chat:", error);
+    return { error: "Failed to start chat" };
   }
 }
 
 export async function sendMessage(chatId: string, text: string) {
-  const session = cookies().get("session")?.value;
-
   try {
-    const response = await axios.post(
-      `${BASE_URL}/messages/${chatId}`,
-      {
+    const session = cookies().get("session")?.value;
+    if (!session) {
+      return { error: "Unauthorized" };
+    }
+
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+    const userId = decoded.id;
+
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return { error: "User not found" };
+    }
+
+    const chatExists = await db.chat.findFirst({ where: { id: chatId } });
+    if (!chatExists) {
+      return { error: "Chat not found" };
+    }
+
+    await db.message.create({
+      data: {
+        chatId: chatExists.id,
+        senderId: user.id,
+        type: "TEXT",
         text,
       },
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      }
-    );
+    });
 
-    if (response.status === 201) {
-      const data = await response.data.msg;
-      revalidatePath("/messages");
-      return { success: data };
-    }
+    revalidatePath("/messages");
+    revalidatePath(`/messages/${chatId}`);
+    return { success: "Message sent" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.error("Error sending message:", error);
+    return { error: "Failed to send message" };
   }
 }

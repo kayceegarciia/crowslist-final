@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import { getChat } from "@/actions/chat";
 import type { IChat, IMessage } from "@/actions/types";
 import { ChatMessages } from "./chat-messages";
 import { MessageInput } from "./message-input";
@@ -13,27 +13,18 @@ interface IMessageBoxProps {
 
 export function MessageBox({ chat, userId }: IMessageBoxProps) {
   const [messages, setMessages] = useState<IMessage[]>(chat.messages);
-  const [socket, setSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:7777");
-
-    setSocket(ws);
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log(data);
-      if (data.event === "new_message") {
-        setMessages((prev) => [...prev, data.newMessage]);
+    // Poll for new messages every 3 seconds
+    const pollInterval = setInterval(async () => {
+      const response = await getChat(chat.id);
+      if (response?.success) {
+        setMessages(response.success.messages);
       }
-    };
+    }, 3000);
 
-    return () => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.close();
-      }
-    };
-  }, []);
+    return () => clearInterval(pollInterval);
+  }, [chat.id]);
 
   return (
     <>
@@ -45,7 +36,6 @@ export function MessageBox({ chat, userId }: IMessageBoxProps) {
       {/* Input Bar */}
       <MessageInput
         chatId={chat.id}
-        socket={socket as WebSocket}
         receiverId={
           chat.participants.filter((user) => user.id !== userId)[0].id
         }

@@ -1,168 +1,240 @@
 "use server";
 
-import axios, { AxiosError } from "axios";
-
+import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import type { IPost, IUserRequest } from "./types";
 import { revalidatePath } from "next/cache";
+import { db } from "@/lib/db";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+const SECRET = process.env.SECRET as string;
 
 export async function adminHome() {
   const session = cookies().get("session")?.value;
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
+
   try {
-    const response = await axios.get(`${BASE_URL}/admin/all`, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
+    const decoded = jwt.verify(session, SECRET) as { id: string; role?: string };
+    
+    if (decoded.role !== "ADMIN") {
+      return { error: "Unauthorized" };
+    }
+
+    const posts = await db.post.findMany({
+      where: { isApproved: false },
+      orderBy: {
+        createdAt: "desc",
       },
     });
 
-    if (response.status === 200) {
-      const data = (await response.data) as {
-        posts: IPost[];
-        requests: IUserRequest[];
-      };
-      return data;
-    }
+    const requests = await db.request.findMany({
+      where: { isApproved: false },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return { posts, requests };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function requestDetails(id: string) {
   const session = cookies().get("session")?.value;
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
+
   try {
-    const response = await axios.get(`${BASE_URL}/admin/requests/${id}`, {
-      withCredentials: true,
-      headers: {
-        Cookie: `session=${session}`,
+    const decoded = jwt.verify(session, SECRET) as { id: string; role?: string };
+    
+    if (decoded.role !== "ADMIN") {
+      return { error: "Unauthorized" };
+    }
+
+    const request = await db.request.findFirst({
+      where: { isApproved: false, id },
+      orderBy: {
+        createdAt: "desc",
       },
     });
 
-    if (response.status === 200) {
-      const data = await response.data.request;
-      return data;
-    }
+    return { success: request };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function approvePost(id: string) {
   const session = cookies().get("session")?.value;
-  try {
-    const response = await axios.patch(
-      `${BASE_URL}/admin/posts/approve/${id}`,
-      {},
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      }
-    );
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
 
-    if (response.status === 200) {
-      const data = await response.data.msg;
-      revalidatePath("/admin/dashboard");
-      return data;
+  try {
+    const decoded = jwt.verify(session, SECRET) as { id: string; role?: string };
+    
+    if (decoded.role !== "ADMIN") {
+      return { error: "Unauthorized" };
     }
+
+    const post = await db.post.update({
+      where: { id },
+      data: {
+        adminMessage: "Post verified and approved",
+        isApproved: true,
+      },
+      include: {
+        seller: true,
+      },
+    });
+
+    await db.notification.create({
+      data: {
+        message: `Admin has verified and approved your post for ${post.title}`,
+        actionId: decoded.id,
+        targetId: post.sellerId,
+        targetType: "ADMIN_APPROVE",
+      },
+    });
+
+    revalidatePath("/admin/dashboard");
+    return { success: "Post approved" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function rejectPost(id: string, reason: string) {
   const session = cookies().get("session")?.value;
-  try {
-    const response = await axios.patch(
-      `${BASE_URL}/admin/posts/reject/${id}`,
-      {
-        reason,
-      },
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      }
-    );
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
 
-    if (response.status === 200) {
-      const data = await response.data.msg;
-      revalidatePath("/admin/dashboard");
-      return data;
+  try {
+    const decoded = jwt.verify(session, SECRET) as { id: string; role?: string };
+    
+    if (decoded.role !== "ADMIN") {
+      return { error: "Unauthorized" };
     }
+
+    const post = await db.post.update({
+      where: { id },
+      data: {
+        adminMessage: reason,
+        isApproved: false,
+      },
+      include: {
+        seller: true,
+      },
+    });
+
+    await db.notification.create({
+      data: {
+        message: `Admin has reject your post for ${post.title} and the reason is "${post.adminMessage}"`,
+        actionId: decoded.id,
+        targetId: post.sellerId,
+        targetType: "ADMIN_REJECT",
+      },
+    });
+
+    revalidatePath("/admin/dashboard");
+    return { success: "Post rejected with the reason" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function approveRequest(id: string) {
   const session = cookies().get("session")?.value;
-  try {
-    const response = await axios.patch(
-      `${BASE_URL}/admin/requests/approve/${id}`,
-      {},
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      }
-    );
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
 
-    if (response.status === 200) {
-      const data = await response.data.msg;
-      revalidatePath("/admin/dashboard");
-      return data;
+  try {
+    const decoded = jwt.verify(session, SECRET) as { id: string; role?: string };
+    
+    if (decoded.role !== "ADMIN") {
+      return { error: "Unauthorized" };
     }
+
+    const request = await db.request.update({
+      where: { id },
+      data: {
+        adminMessage: "Request verified and approved",
+        isApproved: true,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    await db.notification.create({
+      data: {
+        message: `Admin has verified and approved your request for ${request.title}`,
+        actionId: decoded.id,
+        targetId: request.userId,
+        targetType: "ADMIN_APPROVE",
+      },
+    });
+
+    revalidatePath("/admin/dashboard");
+    return { success: "Request approved" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }
 
 export async function rejectRequest(id: string, reason: string) {
   const session = cookies().get("session")?.value;
-  try {
-    const response = await axios.patch(
-      `${BASE_URL}/admin/requests/reject/${id}`,
-      {
-        reason,
-      },
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      }
-    );
+  
+  if (!session) {
+    return { error: "Unauthorized" };
+  }
 
-    if (response.status === 200) {
-      const data = await response.data.msg;
-      revalidatePath("/admin/dashboard");
-      return data;
+  try {
+    const decoded = jwt.verify(session, SECRET) as { id: string; role?: string };
+    
+    if (decoded.role !== "ADMIN") {
+      return { error: "Unauthorized" };
     }
+
+    const request = await db.request.update({
+      where: { id },
+      data: {
+        adminMessage: reason,
+        isApproved: false,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    await db.notification.create({
+      data: {
+        message: `Admin has reject your post for ${request.title} and the reason is "${request.adminMessage}"`,
+        actionId: decoded.id,
+        targetId: request.userId,
+        targetType: "ADMIN_REJECT",
+      },
+    });
+
+    revalidatePath("/admin/dashboard");
+    return { success: "Request rejected with the reason" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.log("Error:", error);
+    return { error: "Something went wrong" };
   }
 }

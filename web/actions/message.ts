@@ -2,65 +2,78 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import axios, { AxiosError } from "axios";
+import jwt from "jsonwebtoken";
+import { db } from "@/lib/db";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+const SECRET = process.env.SECRET as string;
 
 export async function sendMessage(chatId: string, text: string) {
-  const session = cookies().get("session")?.value;
-
   try {
-    const response = await axios.post(
-      `${BASE_URL}/messages/${chatId}`,
-      {
+    const session = cookies().get("session")?.value;
+    if (!session) {
+      return { error: "Unauthorized" };
+    }
+
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+    const userId = decoded.id;
+
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return { error: "User not found" };
+    }
+
+    const chatExists = await db.chat.findFirst({ where: { id: chatId } });
+    if (!chatExists) {
+      return { error: "Chat not found" };
+    }
+
+    await db.message.create({
+      data: {
+        chatId: chatExists.id,
+        senderId: user.id,
+        type: "TEXT",
         text,
       },
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      }
-    );
+    });
 
-    if (response.status === 201) {
-      const data = await response.data.msg;
-      revalidatePath("/messages");
-      revalidatePath(`/messages/${chatId}`);
-      return { success: data };
-    }
+    revalidatePath("/messages");
+    revalidatePath(`/messages/${chatId}`);
+    return { success: "Message sent" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.error("Error sending message:", error);
+    return { error: "Failed to send message" };
   }
 }
 
 export async function deleteMessage(chatId: string, messageId: string) {
-  const session = cookies().get("session")?.value;
-
   try {
-    const response = await axios.delete(
-      `${BASE_URL}/messages/${chatId}/${messageId}`,
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: `session=${session}`,
-        },
-      }
-    );
+    const session = cookies().get("session")?.value;
+    if (!session) {
+      return { error: "Unauthorized" };
+    }
 
-    if (response.status === 200) {
-      const data = await response.data.msg;
-      revalidatePath("/messages");
-      revalidatePath(`/messages/${chatId}`);
-      return { success: data };
+    const decoded = jwt.verify(session, SECRET) as { id: string };
+    const userId = decoded.id;
+
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return { error: "User not found" };
     }
+
+    const chatExists = await db.chat.findFirst({ where: { id: chatId } });
+    if (!chatExists) {
+      return { error: "Chat not found" };
+    }
+
+    await db.message.delete({
+      where: { id: messageId },
+    });
+
+    revalidatePath("/messages");
+    revalidatePath(`/messages/${chatId}`);
+    return { success: "Message deleted" };
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const errorData = await error.response?.data.msg;
-      return { error: errorData };
-    }
+    console.error("Error deleting message:", error);
+    return { error: "Failed to delete message" };
   }
 }
