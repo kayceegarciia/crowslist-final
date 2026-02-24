@@ -75,7 +75,7 @@ export async function fetchPost(postId: string) {
     const averageRating =
       totalRatings > 0
         ? Number.parseFloat(
-            (ratings.reduce((a, b) => a + b, 0) / totalRatings).toFixed(2)
+            (ratings.reduce((a: number, b: number) => a + b, 0) / totalRatings).toFixed(2)
           )
         : null;
 
