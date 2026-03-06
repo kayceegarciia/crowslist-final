@@ -77,8 +77,9 @@ export async function signupAction(values: z.infer<typeof SignupSchema>) {
 
     return { success: "Account created!", token, uid: newUser.id };
   } catch (error) {
-    console.log("Error:", error);
-    return { error: "Something went wrong!" };
+    console.log("Signup Error:", error);
+    const message = error instanceof Error ? error.message : "Something went wrong!";
+    return { error: message };
   }
 }
 
@@ -115,8 +116,9 @@ export async function loginAction(values: z.infer<typeof LoginSchema>) {
 
     return { success: "Credentials verified!", token, uid: userExists.id };
   } catch (error) {
-    console.log("Error:", error);
-    return { error: "Something went wrong!" };
+    console.log("Login Error:", error);
+    const message = error instanceof Error ? error.message : "Something went wrong!";
+    return { error: message };
   }
 }
 
@@ -156,8 +158,9 @@ export async function adminLoginAction(values: z.infer<typeof LoginSchema>) {
 
     return { success: "Credentials verified!", token, uid: userExists.id };
   } catch (error) {
-    console.log("Error:", error);
-    return { error: "Something went wrong!" };
+    console.log("Admin Login Error:", error);
+    const message = error instanceof Error ? error.message : "Something went wrong!";
+    return { error: message };
   }
 }
 
