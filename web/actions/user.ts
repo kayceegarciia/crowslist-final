@@ -1,7 +1,7 @@
 "use server";
 
 import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import type { IUserNotification } from "./types";
