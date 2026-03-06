@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 import { ImageCarousel } from "@/components/image-carousel";
 import { ArrowLeft } from "lucide-react";
 
@@ -18,13 +20,13 @@ export default async function PostDetails({
   const response = await fetchPost(params.id);
   let post: IPost | undefined = undefined;
   let sellerStats:
-    | { totalSoldWithRating: number; averageRating: number }
+    | { totalSoldWithRating: number; averageRating: number | null }
     | undefined = undefined;
 
   if (response?.error) return toast.error(response.error);
 
   if (response?.success) {
-    post = response.success.post;
+    post = response.success.post as unknown as IPost;
     sellerStats = response.success.sellerStats;
   }
 

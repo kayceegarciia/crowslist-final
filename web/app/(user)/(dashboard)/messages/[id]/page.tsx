@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -23,7 +25,7 @@ export default async function Chat({
   }
 
   if (response?.success) {
-    chat = response.success;
+    chat = response.success as unknown as IChat;
   }
 
   return (

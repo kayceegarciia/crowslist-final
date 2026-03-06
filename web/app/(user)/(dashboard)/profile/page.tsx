@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import Image from "next/image";
 
@@ -23,7 +25,7 @@ async function profile() {
 }
 
 export default async function Profile() {
-  const userProfile = (await profile()) as IUserProfile;
+  const userProfile = (await profile()) as unknown as IUserProfile;
 
   console.log();
   console.log("USERPROFILE:", userProfile);

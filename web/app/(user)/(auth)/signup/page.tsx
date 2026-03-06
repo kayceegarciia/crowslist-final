@@ -4,6 +4,8 @@ import { SignupForm } from "@/components/signup-form";
 import { Logo } from "@/components/navbar";
 import Image from "next/image";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Signup",
 };

@@ -35,7 +35,7 @@ export function ApproveBtn({
       return;
     }
 
-    toast.success(response);
+    toast.success(response?.success);
     router.replace("/admin/dashboard");
     return;
   }
@@ -79,7 +79,7 @@ export function RejectMessageForm({
         return;
       }
 
-      toast.success(response);
+      toast.success(response?.success);
       setReason("");
       router.replace("/admin/dashboard");
       return;

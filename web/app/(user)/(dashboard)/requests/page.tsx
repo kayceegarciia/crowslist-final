@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import {
   Pagination,
   PaginationContent,
@@ -13,7 +15,7 @@ import type { IUserRequest } from "@/actions/types";
 import { RequestCard } from "@/components/request-card";
 
 export default async function OthersRequest() {
-  const requests = (await fetchRequests()) as IUserRequest[];
+  const requests = (await fetchRequests()) as unknown as IUserRequest[];
   console.log(requests);
 
   return (

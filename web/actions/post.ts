@@ -3,6 +3,7 @@
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import type { z } from "zod";
+import type { PostCategory } from "@prisma/client";
 import type { CreatePostSchema } from "@/types/zodSchema";
 import { revalidatePath } from "next/cache";
 import type { IPost } from "./types";
@@ -137,7 +138,7 @@ export async function createPost(values: z.infer<typeof CreatePostSchema>) {
         description,
         images,
         price,
-        category,
+        category: category as PostCategory,
         sellerId: decoded.id,
       },
     });
@@ -184,9 +185,13 @@ export async function updatePost(
       return { error: "Unauthorized" };
     }
 
+    const { category, ...rest } = modifiedData;
     await db.post.update({
       where: { id: postId },
-      data: modifiedData,
+      data: {
+        ...rest,
+        ...(category ? { category: category as PostCategory } : {}),
+      },
     });
 
     revalidatePath("/profile");

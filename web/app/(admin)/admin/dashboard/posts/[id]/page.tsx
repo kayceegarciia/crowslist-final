@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { ImageCarousel } from "../../../../../../components/image-carousel";
 import {
   Dialog,
@@ -23,7 +25,7 @@ export default async function AdminPostDetails({
   if (response?.error) return toast.error(response.error);
 
   if (response?.success) {
-    post = response.success.post;
+    post = response.success.post as unknown as IPost;
   }
   return (
     <div className="p-4 h-full">

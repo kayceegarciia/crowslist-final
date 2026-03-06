@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 import {
   Pagination,
   PaginationContent,
@@ -55,7 +57,7 @@ export default async function Home({
   }
 
   if (response?.success) {
-    posts = response.success;
+    posts = response.success as unknown as IPost[];
   }
 
   return (

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ImageCarousel } from "@/components/image-carousel";
@@ -35,12 +37,12 @@ export default async function UserPostDetails({
   if (response?.error) return toast.error(response.error);
 
   if (response?.success) {
-    post = response.success.post;
+    post = response.success.post as unknown as IPost;
     console.log(post?.feeback);
   }
 
   if (fetchChatResponse?.success) {
-    chats = fetchChatResponse?.success;
+    chats = fetchChatResponse?.success as unknown as IChat[];
   }
 
   chats = chats.filter(

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 
@@ -15,7 +17,7 @@ export default async function Notifications() {
   if (response?.error) return toast.error(response.error);
 
   if (response?.success) {
-    notifications = response.success as IUserNotification[];
+    notifications = response.success as unknown as IUserNotification[];
   }
 
   return (

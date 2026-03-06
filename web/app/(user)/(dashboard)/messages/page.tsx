@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -31,7 +33,7 @@ export default async function MessagesPage() {
   }
 
   if (response?.success) {
-    chats = response.success;
+    chats = response.success as unknown as IChat[];
   }
 
   return (

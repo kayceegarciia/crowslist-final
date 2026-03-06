@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { toast } from "sonner";
 
 import { fetchUserProfile } from "@/actions/user";
@@ -12,7 +14,7 @@ export default async function UpdateUserProfile() {
     toast.error(response?.error);
     return;
   }
-  userProfile = response?.success;
+  userProfile = response?.success as unknown as UserProfile;
 
   return (
     <div className="p-5">

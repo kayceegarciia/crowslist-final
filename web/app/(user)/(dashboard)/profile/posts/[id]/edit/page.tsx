@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { fetchPost } from "@/actions/post";
 import { IPost } from "@/actions/types";
 import { EditProductListingForm } from "@/components/edit-listing-form";
@@ -10,7 +12,7 @@ export default async function EditPost({ params }: { params: { id: string } }) {
   if (response?.error) return toast.error(response.error);
 
   if (response?.success) {
-    post = response.success.post;
+    post = response.success.post as unknown as IPost;
   }
 
   return (

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { ApproveBtn, RejectMessageForm } from "@/components/admin-action-btn";
 import {
   Dialog,
@@ -16,7 +18,7 @@ export default async function AdminRequestDetails({
 }: {
   params: { id: string };
 }) {
-  const request = (await requestDetails(params.id)) as IUserRequest;
+  const request = (await requestDetails(params.id)) as unknown as IUserRequest;
   console.log(request);
 
   return (
