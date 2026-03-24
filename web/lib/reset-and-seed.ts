@@ -143,14 +143,10 @@ const CATEGORY_DATA: Record<
 };
 
 const IMAGE_POOL = [
-  "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=1200&q=80",
-  "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80",
-  "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80",
-  "https://images.unsplash.com/photo-1484417894907-623942c8ee29?auto=format&fit=crop&w=1200&q=80",
-  "https://images.unsplash.com/photo-1488998527040-85054a85150e?auto=format&fit=crop&w=1200&q=80",
-  "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80",
-  "https://images.unsplash.com/photo-1519222970733-f546218fa6d7?auto=format&fit=crop&w=1200&q=80",
-  "https://images.unsplash.com/photo-1587614382346-4ec70e388b28?auto=format&fit=crop&w=1200&q=80",
+  "/placeholder-product.svg",
+  "/placeholder-product.svg?variant=2",
+  "/placeholder-product.svg?variant=3",
+  "/placeholder-product.svg?variant=4",
 ];
 
 const DEFAULT_OPTIONS: Required<ResetAndSeedOptions> = {
@@ -178,7 +174,7 @@ function buildFakeUsers(count: number, hashedPassword: string) {
       password: hashedPassword,
       college: COLLEGES[idx % COLLEGES.length] as string,
       phoneNo: `480555${String(1000 + idx).slice(-4)}`,
-      image: `https://i.pravatar.cc/300?img=${(idx % 70) + 1}`,
+      image: `/placeholder-avatar.svg?variant=${(idx % 10) + 1}`,
       role: Role.USER,
     };
   });

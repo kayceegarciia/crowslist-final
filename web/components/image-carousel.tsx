@@ -5,9 +5,11 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import Image from "next/image";
+import { FallbackImage } from "@/components/ui/fallback-image";
 
 export function ImageCarousel({ images }: { images: string[] }) {
+  const carouselImages = images?.length ? images : ["/placeholder-product.svg"];
+
   return (
     <Carousel
       opts={{
@@ -16,14 +18,15 @@ export function ImageCarousel({ images }: { images: string[] }) {
       className="w-full"
     >
       <CarouselContent className="-mt-1 object-cover h-[300px] lg:h-[350px]">
-        {images?.map((image, index) => (
+        {carouselImages.map((image, index) => (
           <CarouselItem
             // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
             key={index}
             className="flex justify-center items-center h-full w-full rounded-md"
           >
-            <Image
+            <FallbackImage
               src={image}
+              fallbackSrc="/placeholder-product.svg"
               alt="Product image"
               height={600}
               width={600}

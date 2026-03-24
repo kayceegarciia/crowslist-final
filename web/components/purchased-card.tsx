@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 import {
   Card,
   CardDescription,
@@ -19,6 +17,7 @@ import type { IPost } from "@/actions/types";
 import { cn } from "./lib/utils";
 import { Button } from "./ui/button";
 import { FeedbackForm } from "./feedback-form";
+import { FallbackImage } from "./ui/fallback-image";
 
 export function PurchasedCard({ post }: { post: IPost }) {
   console.log("PURCHASED:", post);
@@ -29,8 +28,9 @@ export function PurchasedCard({ post }: { post: IPost }) {
         !post.isAvailable && "bg-top"
       )}
     >
-      <Image
-        src={post.images[0]}
+      <FallbackImage
+        src={post.images?.[0]}
+        fallbackSrc="/placeholder-product.svg"
         width={500}
         height={500}
         quality={100}

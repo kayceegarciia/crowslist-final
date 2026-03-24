@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { formatDistanceToNow } from "date-fns";
@@ -22,6 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { FallbackImage } from "@/components/ui/fallback-image";
 
 export function RequestCard({
   type,
@@ -44,8 +44,9 @@ export function RequestCard({
 
   return (
     <Card className="space-y-2 flex flex-col w-full border-0 bg-gray-50 hover:shadow-md transition-all duration-300">
-      <Image
+      <FallbackImage
         src={request.image}
+        fallbackSrc="/placeholder-product.svg"
         width={1080}
         height={1920}
         quality={100}
@@ -70,8 +71,9 @@ export function RequestCard({
       <div className="p-5 pt-0 space-y-3">
         <div className="flex max-w-sm items-center gap-5">
           <div className="flex w-10 h-10 rounded-full">
-            <Image
+            <FallbackImage
               src={request.user.image}
+              fallbackSrc="/placeholder-avatar.svg"
               width={200}
               height={200}
               priority
@@ -101,8 +103,9 @@ export function RequestCard({
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <Image
+                  <FallbackImage
                     src={request.user.image}
+                    fallbackSrc="/placeholder-avatar.svg"
                     alt={`${request.user.name} profile pic`}
                     width={300}
                     height={300}

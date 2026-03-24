@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +12,7 @@ import { PostCard } from "@/components/post-card";
 import { RequestCard } from "@/components/request-card";
 import { toast } from "sonner";
 import { PurchasedCard } from "@/components/purchased-card";
+import { FallbackImage } from "@/components/ui/fallback-image";
 
 async function profile() {
   const response = await fetchUserProfile();
@@ -42,8 +42,9 @@ export default async function Profile() {
           <div className="absolute bottom-0 w-full sm:w-fit flex justify-center transform translate-y-1/2 sm:justify-start sm:left-6">
             <div className="relative">
               <div className="w-32 h-32 rounded-full border-4 border-white overflow-hidden bg-white">
-                <Image
+                <FallbackImage
                   src={userProfile.image}
+                  fallbackSrc="/placeholder-avatar.svg"
                   alt={`${userProfile.name} profile picture`}
                   width={300}
                   height={300}

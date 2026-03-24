@@ -8,9 +8,9 @@ import { ArrowLeft } from "lucide-react";
 import { fetchPost } from "@/actions/post";
 import type { IPost } from "@/actions/types";
 import { toast } from "sonner";
-import Image from "next/image";
 import { cookies } from "next/headers";
 import { MessageSellerBtn } from "@/components/message-seller-btn";
+import { FallbackImage } from "@/components/ui/fallback-image";
 
 export default async function PostDetails({
   params,
@@ -66,8 +66,9 @@ export default async function PostDetails({
           Seller Info:
         </h1>
         <div className="md:flex md:items-center md:gap-2 p-5 pt-0">
-          <Image
+          <FallbackImage
             src={post?.seller.image as string}
+            fallbackSrc="/placeholder-avatar.svg"
             alt={`${post?.seller.name} profile picture`}
             width={500}
             height={500}

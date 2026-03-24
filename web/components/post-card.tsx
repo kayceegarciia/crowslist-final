@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 
@@ -11,6 +10,7 @@ import {
 
 import { cn } from "@/components/lib/utils";
 import type { IPost } from "@/actions/types";
+import { FallbackImage } from "@/components/ui/fallback-image";
 
 export function PostCard({
   type,
@@ -30,8 +30,9 @@ export function PostCard({
           type === "profile" && "mt-5"
         )}
       >
-        <Image
-          src={post.images[0]}
+        <FallbackImage
+          src={post.images?.[0]}
+          fallbackSrc="/placeholder-product.svg"
           width={500}
           height={500}
           quality={100}
