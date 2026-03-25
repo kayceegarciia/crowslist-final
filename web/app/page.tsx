@@ -18,7 +18,7 @@ import {
   PlusIcon,
   Scale,
   ShieldCheck,
-  RefreshCcw,
+  Leaf,
   Clock5,
   Clipboard,
 } from "lucide-react";
@@ -50,7 +50,7 @@ const features: {
         "Trade with confidence knowing all users are verified by admin and are members of your college community.",
     },
     {
-      icon: <RefreshCcw />,
+      icon: <Leaf />,
       title: "Sustainable Practice",
       description:
         "Contribute to environmental sustainability by reusing and recycling academic materials.",
